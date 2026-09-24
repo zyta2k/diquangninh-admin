@@ -1,14 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import type { FormEvent } from 'react'
+import { useAuth } from '../../hooks/useAuth'
 
 export const Route = createFileRoute('/auth/login')({
   component: LoginPage,
 })
 
 function LoginPage() {
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-  }
+  const { handleLoginSubmit, isLoggingIn, loginError } = useAuth()
 
   return (
     <section className="w-full max-w-md rounded-xl border bg-card p-6 shadow-sm sm:p-8">
@@ -19,7 +17,7 @@ function LoginPage() {
         </p>
       </div>
 
-      <form className="space-y-5" onSubmit={handleSubmit}>
+      <form className="space-y-5" onSubmit={handleLoginSubmit}>
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="username">
             Tên đăng nhập
@@ -48,11 +46,21 @@ function LoginPage() {
           />
         </div>
 
+        {loginError ? (
+          <p
+            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            role="alert"
+          >
+            {loginError}
+          </p>
+        ) : null}
+
         <button
           type="submit"
+          disabled={isLoggingIn}
           className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          Đăng nhập
+          {isLoggingIn ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </button>
       </form>
     </section>
