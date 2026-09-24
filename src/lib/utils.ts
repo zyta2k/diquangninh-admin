@@ -1,7 +1,8 @@
-import { clsx, type ClassValue } from 'clsx'
+import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import type { ClassValue} from 'clsx'
 
-export function cn(...inputs: ClassValue[]) {
+export function cn(...inputs: Array<ClassValue>) {
   return twMerge(clsx(inputs))
 }
 
@@ -27,7 +28,7 @@ export function formatCurrencyShort(
   let n: number
   if (typeof input === 'string') {
     // strip common currency characters and commas
-    const cleaned = input.replace(/[^0-9.\-]/g, '')
+    const cleaned = input.replace(/[^0-9.-]/g, '')
     n = Number(cleaned)
   } else {
     n = input

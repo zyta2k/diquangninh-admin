@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { env } from 'cloudflare:workers'
+import { hasAdminAccess } from '../../../lib/auth-guard'
+import type { AuthUser } from '../../../lib/auth-guard'
 
 const ACCESS_TOKEN_COOKIE = 'diquangninh-access-token'
 const REFRESH_TOKEN_COOKIE = 'diquangninh-refresh-token'
@@ -8,13 +10,7 @@ const ONE_WEEK = 60 * 60 * 24 * 7
 type LoginResponse = {
   jwt?: string
   jwtRefresh?: string
-  user?: {
-    id?: string | number
-    username?: string
-    role?: string
-    confirmed?: boolean
-    blocked?: boolean
-  }
+  user?: AuthUser
 }
 
 type ApiErrorResponse = {
@@ -25,7 +21,7 @@ type ApiErrorResponse = {
 type SuccessfulLoginResponse = {
   jwt: string
   jwtRefresh: string
-  user: NonNullable<LoginResponse['user']>
+  user: AuthUser
 }
 
 type LoginResult =
@@ -92,7 +88,7 @@ function cookieHeaders(values: Array<string>) {
   return headers
 }
 
-function sessionFromToken(token: string) {
+function sessionFromToken(token: string, user: AuthUser) {
   const claims = decodeJwt(token)
   if (!claims || isExpired(claims) || !claims.id || !claims.username)
     return null
@@ -108,13 +104,36 @@ function sessionFromToken(token: string) {
       ).toISOString(),
     },
     user: {
-      id: claims.id,
-      name: claims.username,
-      email: claims.username,
-      role: claims.role,
-      confirmed: claims.confirmed,
-      blocked: claims.blocked,
+      id: String(user.id ?? claims.id),
+      name: user.username ?? claims.username,
+      email: user.username ?? claims.username,
+      role: user.role ?? claims.role,
+      confirmed: user.confirmed ?? claims.confirmed,
+      blocked: user.blocked ?? claims.blocked,
     },
+  }
+}
+
+function isAuthUser(value: unknown): value is AuthUser {
+  return typeof value === 'object' && value !== null
+}
+
+async function getCurrentUser(token: string): Promise<AuthUser | null> {
+  try {
+    const response = await fetch(`${apiUrl()}/auth/me`, {
+      headers: {
+        accept: 'application/json',
+        authorization: `Bearer ${token}`,
+      },
+    })
+    if (!response.ok) return null
+
+    const body = (await response.json().catch(() => null)) as unknown
+    if (!isAuthUser(body)) return null
+
+    return 'user' in body && isAuthUser(body.user) ? body.user : body
+  } catch {
+    return null
   }
 }
 
@@ -161,12 +180,24 @@ async function login(username: string, password: string): Promise<LoginResult> {
 export const Route = createFileRoute('/api/auth/$')({
   server: {
     handlers: {
-      GET: ({ request, params }) => {
+      GET: async ({ request, params }) => {
         if (params._splat !== 'get-session')
           return json({ message: 'Not found' }, { status: 404 })
 
         const token = readCookie(request, ACCESS_TOKEN_COOKIE)
-        return json(token ? sessionFromToken(token) : null)
+        if (!token) return json(null)
+
+        const user = await getCurrentUser(token)
+        if (!user || !hasAdminAccess(user)) {
+          return json(null, {
+            headers: cookieHeaders([
+              cookie(ACCESS_TOKEN_COOKIE, '', request, 0),
+              cookie(REFRESH_TOKEN_COOKIE, '', request, 0),
+            ]),
+          })
+        }
+
+        return json(sessionFromToken(token, user))
       },
       POST: async ({ request, params }) => {
         if (params._splat === 'sign-in/local') {
@@ -184,7 +215,25 @@ export const Route = createFileRoute('/api/auth/$')({
           }
 
           const { jwt, jwtRefresh } = result.data
-          const session = sessionFromToken(jwt)
+          const user = await getCurrentUser(jwt)
+          if (user && !hasAdminAccess(user)) {
+            return json(
+              {
+                code: 'FORBIDDEN',
+                message:
+                  'Tài khoản của bạn không có quyền truy cập trang quản trị.',
+              },
+              {
+                status: 403,
+                headers: cookieHeaders([
+                  cookie(ACCESS_TOKEN_COOKIE, '', request, 0),
+                  cookie(REFRESH_TOKEN_COOKIE, '', request, 0),
+                ]),
+              },
+            )
+          }
+
+          const session = user ? sessionFromToken(jwt, user) : null
           if (!session) {
             return json(
               {
