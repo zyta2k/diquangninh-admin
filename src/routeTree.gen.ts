@@ -14,7 +14,7 @@ import { Route as AuthRouteRouteImport } from './routes/auth/route'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AppPartnerManagementRouteImport } from './routes/_app/partner-management'
 
 const SplatRoute = SplatRouteImport.update({
   id: '/$',
@@ -40,55 +40,54 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AuthRouteRoute,
 } as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
+const AppPartnerManagementRoute = AppPartnerManagementRouteImport.update({
+  id: '/partner-management',
+  path: '/partner-management',
+  getParentRoute: () => AppRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteRouteWithChildren
   '/$': typeof SplatRoute
+  '/partner-management': typeof AppPartnerManagementRoute
   '/auth/login': typeof AuthLoginRoute
   '/': typeof AppIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRouteRouteWithChildren
   '/$': typeof SplatRoute
+  '/partner-management': typeof AppPartnerManagementRoute
   '/auth/login': typeof AuthLoginRoute
   '/': typeof AppIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
   '/auth': typeof AuthRouteRouteWithChildren
   '/$': typeof SplatRoute
+  '/_app/partner-management': typeof AppPartnerManagementRoute
   '/auth/login': typeof AuthLoginRoute
   '/_app/': typeof AppIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/auth' | '/$' | '/auth/login' | '/' | '/api/auth/$'
+  fullPaths: '/auth' | '/$' | '/partner-management' | '/auth/login' | '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/$' | '/auth/login' | '/' | '/api/auth/$'
+  to: '/auth' | '/$' | '/partner-management' | '/auth/login' | '/'
   id:
     | '__root__'
     | '/_app'
     | '/auth'
     | '/$'
+    | '/_app/partner-management'
     | '/auth/login'
     | '/_app/'
-    | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   SplatRoute: typeof SplatRoute
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -128,21 +127,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRouteRoute
     }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_app/partner-management': {
+      id: '/_app/partner-management'
+      path: '/partner-management'
+      fullPath: '/partner-management'
+      preLoaderRoute: typeof AppPartnerManagementRouteImport
+      parentRoute: typeof AppRouteRoute
     }
   }
 }
 
 interface AppRouteRouteChildren {
+  AppPartnerManagementRoute: typeof AppPartnerManagementRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppPartnerManagementRoute: AppPartnerManagementRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
@@ -166,7 +167,6 @@ const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
   AuthRouteRoute: AuthRouteRouteWithChildren,
   SplatRoute: SplatRoute,
-  ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

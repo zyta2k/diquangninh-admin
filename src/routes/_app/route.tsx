@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import Footer from '../../components/Footer'
 import Header from '../../components/Header'
 import Sidebar from '../../components/Sidebar'
-import { authClient } from '../../lib/auth-client'
+import { useAuth } from '../../hooks/useAuth'
 
 export const Route = createFileRoute('/_app')({
   component: AppLayout,
@@ -11,13 +11,13 @@ export const Route = createFileRoute('/_app')({
 
 function AppLayout() {
   const navigate = useNavigate()
-  const { data: session, isPending, error } = authClient.useSession()
+  const { isPending, error, user } = useAuth()
 
   useEffect(() => {
-    if (!isPending && !error && !session) {
+    if (!isPending && !error && !user) {
       void navigate({ to: '/auth/login', replace: true })
     }
-  }, [error, isPending, navigate, session])
+  }, [error, isPending, navigate, user])
 
   if (isPending) {
     return (
@@ -27,7 +27,7 @@ function AppLayout() {
     )
   }
 
-  if (!session && !error) {
+  if (!user && !error) {
     return null
   }
 

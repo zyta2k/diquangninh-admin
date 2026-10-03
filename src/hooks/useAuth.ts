@@ -1,45 +1,40 @@
-import { useState } from 'react'
-import { authClient } from '../lib/auth-client'
+import { useEffect, useState } from 'react'
+import { clearSession, getCurrentUser, getStoredSession, loginWithApi } from '../lib/auth'
 import type { FormEvent } from 'react'
 
-type LoginCredentials = {
-  username: string
-  password: string
-}
-
-type LoginResponse = {
-  message?: string
-}
-
 export function useAuth() {
-  const {
-    data: session,
-    isPending,
-    error: sessionError,
-  } = authClient.useSession()
+  const [session, setSession] = useState(getStoredSession)
+  const [isPending, setIsPending] = useState(true)
+  const [sessionError, setSessionError] = useState<Error | null>(null)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [loginError, setLoginError] = useState<string | null>(null)
 
-  async function login({ username, password }: LoginCredentials) {
+  useEffect(() => {
+    const storedSession = getStoredSession()
+    if (!storedSession) {
+      setIsPending(false)
+      return
+    }
+
+    void getCurrentUser(storedSession.accessToken)
+      .then((user) => {
+        if (!user) {
+          clearSession()
+          setSession(null)
+          return
+        }
+        setSession({ ...storedSession, user })
+      })
+      .catch(() => setSessionError(new Error('Không thể xác minh phiên đăng nhập.')))
+      .finally(() => setIsPending(false))
+  }, [])
+
+  async function login(username: string, password: string) {
     setIsLoggingIn(true)
 
     try {
-      const response = await fetch('/api/auth/sign-in/local', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ username, password }),
-      })
-      const result = (await response
-        .json()
-        .catch(() => null)) as LoginResponse | null
-
-      return {
-        error: response.ok
-          ? null
-          : (result?.message ?? 'Không thể đăng nhập. Vui lòng thử lại.'),
-      }
+      return await loginWithApi(username, password)
     } catch {
       return {
         error: 'Không thể kết nối đến dịch vụ đăng nhập. Vui lòng thử lại.',
@@ -49,17 +44,13 @@ export function useAuth() {
     }
   }
 
-  async function logout() {
+  function logout() {
     setIsLoggingOut(true)
 
-    try {
-      const { error } = await authClient.signOut()
-      return { error: error?.message ?? null }
-    } catch {
-      return { error: 'Không thể đăng xuất. Vui lòng thử lại.' }
-    } finally {
-      setIsLoggingOut(false)
-    }
+    clearSession()
+    setSession(null)
+    setIsLoggingOut(false)
+    return { error: null }
   }
 
   async function handleLoginSubmit(event: FormEvent<HTMLFormElement>) {
@@ -69,14 +60,14 @@ export function useAuth() {
     const password = String(formData.get('password') ?? '')
 
     setLoginError(null)
-    const result = await login({ username, password })
+    const result = await login(username, password)
 
     if (result.error) {
       setLoginError(result.error)
       return
     }
 
-    // Reload so Better Auth's session hook reads the newly set HTTP-only cookies.
+    // Re-read the client-side session after the direct API login succeeds.
     window.location.assign('/')
   }
 
