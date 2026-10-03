@@ -6,7 +6,7 @@ import {
   LoaderCircle,
   RefreshCw,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { PartnerTableRow } from '../../components/partners/PartnerTableRow'
 import { usePartners } from '../../hooks/usePartners'
 import { PAGE_SIZE_OPTIONS } from '../../lib/constants'
@@ -23,10 +23,6 @@ function PartnerManagementPage() {
     pageSize,
   })
 
-  useEffect(() => {
-    console.log('Partners updated:', partners)
-  }, [partners])
-
   const visibleRange = useMemo(() => {
     if (partners.length === 0) return '0 đối tác'
     const start = (page - 1) * pageSize + 1
@@ -34,7 +30,7 @@ function PartnerManagementPage() {
   }, [page, partners.length])
 
   return (
-    <section className="mx-auto max-w-7xl space-y-6">
+    <section className="mx-auto space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -59,7 +55,7 @@ function PartnerManagementPage() {
             <p className="max-w-md text-sm text-muted-foreground">{error}</p>
             <button
               type="button"
-              onClick={reload}
+              onClick={() => reload()}
               className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium hover:bg-accent"
             >
               <RefreshCw className="size-4" aria-hidden="true" /> Thử lại
@@ -67,19 +63,24 @@ function PartnerManagementPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-sm">
+            <table className="w-full min-w-300 text-left text-sm">
               <thead className="bg-muted/50 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="px-5 py-3">Ảnh bìa</th>
-                  <th className="px-5 py-3">Tên đối tác</th>
-                  <th className="px-5 py-3">Vị trí</th>
-                  <th className="px-5 py-3">Thao tác</th>
+                  <th className="px-5 py-3">Tên cơ sở</th>
+                  <th className="px-5 py-3">Danh mục</th>
+                  <th className="px-5 py-3">Danh mục con</th>
+                  <th className="px-5 py-3">Phường</th>
+                  <th className="px-5 py-3">Địa chỉ</th>
+                  <th className="px-5 py-3">Hotline</th>
+                  <th className="px-5 py-3">Google Map</th>
+                  <th className="px-5 py-3">Fanpage</th>
+                  <th className="px-5 py-3">Website</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={4} className="h-72 text-center">
+                    <td colSpan={9} className="h-72 text-center">
                       <LoaderCircle className="mx-auto size-5 animate-spin text-muted-foreground" />
                       <span className="sr-only">Đang tải</span>
                     </td>
@@ -87,7 +88,7 @@ function PartnerManagementPage() {
                 ) : partners.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={9}
                       className="h-72 px-5 text-center text-muted-foreground"
                     >
                       Chưa có đối tác nào.

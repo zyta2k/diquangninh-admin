@@ -1,11 +1,5 @@
 import type { Category } from './category'
 
-type PartnerImage = {
-  key?: string
-  path?: string
-  url?: string
-}
-
 export type Partner = {
   id: string | number | bigint
   index?: number
@@ -16,9 +10,12 @@ export type Partner = {
   ward?: string
   address?: string
   tags?: string
+  menuItems?: string
   hotline?: string
+  googleMapUrl?: string
+  facebookPageUrl?: string
+  websiteUrl?: string
   contractStatus?: string
   createdAt?: string
   categories?: Array<Category>
-  coverImage?: PartnerImage
 }
